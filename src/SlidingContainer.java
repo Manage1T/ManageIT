@@ -15,11 +15,12 @@ public class SlidingContainer extends JPanel {
     private JPanel overlayInnerPanel;
 
     // Fields for Sign In (stored as instance variables)
-    private RoundedTextField signInEmailField;
+    private RoundedTextField signInUsernameField;
     private RoundedPasswordField signInPasswordField;
 
     // Fields for Sign Up (stored as instance variables)
     private RoundedTextField signUpNameField;
+    private RoundedTextField signUpUsernameField;
     private RoundedTextField signUpEmailField;
     private RoundedPasswordField signUpPasswordField;
 
@@ -149,10 +150,10 @@ public class SlidingContainer extends JPanel {
         titleLabel.setBounds(50, 70, 410, 50);
         panel.add(titleLabel);
 
-        // Email field
-        signInEmailField = new RoundedTextField("Email", RoundedTextField.IconType.EMAIL);
-        signInEmailField.setBounds(75, 170, 360, 45);
-        panel.add(signInEmailField);
+        // Username field
+        signInUsernameField = new RoundedTextField("Username", RoundedTextField.IconType.USER);
+        signInUsernameField.setBounds(75, 170, 360, 45);
+        panel.add(signInUsernameField);
 
         // Password field
         signInPasswordField = new RoundedPasswordField("Password");
@@ -182,29 +183,34 @@ public class SlidingContainer extends JPanel {
 
         // Title
         JLabel titleLabel = new JLabel("Create Account", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
         titleLabel.setForeground(Color.decode("#028a55"));
-        titleLabel.setBounds(50, 70, 410, 50);
+        titleLabel.setBounds(50, 50, 410, 45);
         panel.add(titleLabel);
 
         // Name field
         signUpNameField = new RoundedTextField("Name", RoundedTextField.IconType.USER);
-        signUpNameField.setBounds(75, 150, 360, 45);
+        signUpNameField.setBounds(75, 120, 360, 43);
         panel.add(signUpNameField);
+
+        // Username field
+        signUpUsernameField = new RoundedTextField("Username", RoundedTextField.IconType.USER);
+        signUpUsernameField.setBounds(75, 175, 360, 43);
+        panel.add(signUpUsernameField);
 
         // Email field
         signUpEmailField = new RoundedTextField("Email", RoundedTextField.IconType.EMAIL);
-        signUpEmailField.setBounds(75, 210, 360, 45);
+        signUpEmailField.setBounds(75, 230, 360, 43);
         panel.add(signUpEmailField);
 
         // Password field
         signUpPasswordField = new RoundedPasswordField("Password");
-        signUpPasswordField.setBounds(75, 270, 360, 45);
+        signUpPasswordField.setBounds(75, 285, 360, 43);
         panel.add(signUpPasswordField);
 
         // SIGN UP button
         RoundedButton signUpBtn = new RoundedButton("SIGN UP", false);
-        signUpBtn.setBounds(155, 345, 200, 45);
+        signUpBtn.setBounds(155, 355, 200, 45);
         signUpBtn.addActionListener(e -> handleSignUp());
         panel.add(signUpBtn);
 
@@ -260,11 +266,11 @@ public class SlidingContainer extends JPanel {
     }
 
     private void handleSignIn() {
-        String email = signInEmailField.getText().trim();
+        String username = signInUsernameField.getText().trim();
         String password = new String(signInPasswordField.getPassword());
 
-        if (email.isEmpty() || !isValidEmail(email)) {
-            CustomDialog.show(this, "Validation Error", "Please enter a valid email address.", false);
+        if (username.isEmpty()) {
+            CustomDialog.show(this, "Validation Error", "Please enter your username.", false);
             return;
         }
 
@@ -273,24 +279,35 @@ public class SlidingContainer extends JPanel {
             return;
         }
 
-        boolean success = DatabaseHelper.authenticateUser(email, password);
+        boolean success = DatabaseHelper.authenticateUser(username, password);
         if (success) {
             CustomDialog.show(this, "Authentication Successful", "Welcome back! Login verified.", true);
             // Clear inputs
-            signInEmailField.setText("");
+            signInUsernameField.setText("");
             signInPasswordField.setText("");
         } else {
-            CustomDialog.show(this, "Authentication Failed", "Invalid email or password.", false);
+            CustomDialog.show(this, "Authentication Failed", "Invalid username or password.", false);
         }
     }
 
     private void handleSignUp() {
         String name = signUpNameField.getText().trim();
+        String username = signUpUsernameField.getText().trim();
         String email = signUpEmailField.getText().trim();
         String password = new String(signUpPasswordField.getPassword());
 
         if (name.isEmpty()) {
             CustomDialog.show(this, "Validation Error", "Please enter your name.", false);
+            return;
+        }
+
+        if (username.isEmpty() || username.length() < 3) {
+            CustomDialog.show(this, "Validation Error", "Username must be at least 3 characters.", false);
+            return;
+        }
+
+        if (!username.matches("^[a-zA-Z0-9_]+$")) {
+            CustomDialog.show(this, "Validation Error", "Username can only contain letters, numbers, and underscores.", false);
             return;
         }
 
@@ -304,16 +321,20 @@ public class SlidingContainer extends JPanel {
             return;
         }
 
-        DatabaseHelper.RegistrationResult result = DatabaseHelper.registerUser(name, email, password);
+        DatabaseHelper.RegistrationResult result = DatabaseHelper.registerUser(name, username, email, password);
         switch (result) {
             case SUCCESS:
                 CustomDialog.show(this, "Registration Successful", "Account created successfully! You can now sign in.", true);
                 // Clear fields
                 signUpNameField.setText("");
+                signUpUsernameField.setText("");
                 signUpEmailField.setText("");
                 signUpPasswordField.setText("");
                 // Transition to sign in
                 animateToState(false);
+                break;
+            case USERNAME_ALREADY_EXISTS:
+                CustomDialog.show(this, "Registration Failed", "This username is already taken.", false);
                 break;
             case EMAIL_ALREADY_EXISTS:
                 CustomDialog.show(this, "Registration Failed", "This email address is already registered.", false);

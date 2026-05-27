@@ -33,8 +33,8 @@ public class Main {
 
             // Alert the user if MySQL initialization failed
             if (dbError != null) {
-                CustomDialog.show(slidingContainer, "Database Offline / Access Denied", 
-                    "Could not connect to MySQL. Update 'src/db.properties' with your password.", false);
+                CustomDialog.show(slidingContainer, "Database Connection Failed", 
+                    "Error: " + dbError + "\n\nPlease check your MySQL status or 'src/db.properties'.", false);
             }
         });
     }
