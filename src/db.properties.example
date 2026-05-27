@@ -1,0 +1,6 @@
+# Database configuration template
+# Copy this file to src/db.properties and enter your credentials.
+db.url=jdbc:mysql://localhost:3306/
+db.name=manage_it_db
+db.username=root
+db.password=
