@@ -1,7 +1,10 @@
+package Mussie;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.ImageObserver;
 
 public class SlidingContainer extends JPanel {
     private final int CONTAINER_WIDTH = 850;
@@ -339,7 +342,7 @@ public class SlidingContainer extends JPanel {
             case EMAIL_ALREADY_EXISTS:
                 CustomDialog.show(this, "Registration Failed", "This email address is already registered.", false);
                 break;
-            case ERROR:
+            case ImageObserver.ERROR:
             default:
                 CustomDialog.show(this, "System Error", "Registration failed. Verify database connectivity in db.properties.", false);
                 break;

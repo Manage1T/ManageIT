@@ -1,21 +1,26 @@
+import Database.Database;
+import Mussie.SlidingContainer;
+
 import javax.swing.*;
+import java.sql.Connection;
 
 public class Main {
-    private static String dbError = null;
-
     public static void main(String[] args) {
+        // GLOBAL VARIABLES : TELL IN TELEGRAM IF CHANGING
+        Database db = new Database();
+        Connection conn = db.con;
+
+        if (conn == null) {
+            System.out.println("Error when connecting to database. Exiting!\n");
+            System.exit(1);
+        }
+
+
+        // Mussie Setup
         // Set system look and feel for native components (like caret, etc.) if available
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {
-        }
-
-        // Attempt database initialization
-        try {
-            DatabaseHelper.initializeDatabase();
-        } catch (Exception e) {
-            dbError = e.getMessage();
-            System.err.println("Database initialization failed: " + dbError);
         }
 
         // Run UI on the Event Dispatch Thread (EDT)
@@ -30,12 +35,6 @@ public class Main {
             frame.pack(); // Pack frame around SlidingContainer size (850x550)
             frame.setLocationRelativeTo(null); // Center window
             frame.setVisible(true);
-
-            // Alert the user if MySQL initialization failed
-            if (dbError != null) {
-                CustomDialog.show(slidingContainer, "Database Connection Failed", 
-                    "Error: " + dbError + "\n\nPlease check your MySQL status or 'src/db.properties'.", false);
-            }
         });
     }
 }
