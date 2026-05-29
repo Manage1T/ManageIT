@@ -1,36 +1,24 @@
 package Mussie;
 
-import javax.swing.*;
-import java.awt.*;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 
-public class GradientPanel extends JPanel {
-    private Color colorStart = Color.decode("#0ba360");
-    private Color colorEnd = Color.decode("#028a55");
-
+public class GradientPanel extends StackPane {
+    
     public GradientPanel() {
-        setOpaque(false);
+        setStyle("-fx-background-color: linear-gradient(to bottom right, #0ba360, #028a55);");
     }
 
     public GradientPanel(Color start, Color end) {
-        this.colorStart = start;
-        this.colorEnd = end;
-        setOpaque(false);
+        String startHex = toHexString(start);
+        String endHex = toHexString(end);
+        setStyle("-fx-background-color: linear-gradient(to bottom right, " + startHex + ", " + endHex + ");");
     }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        int width = getWidth();
-        int height = getHeight();
-        
-        // Gradient from top-left to bottom-right
-        GradientPaint gp = new GradientPaint(0, 0, colorStart, width, height, colorEnd);
-        g2.setPaint(gp);
-        g2.fillRect(0, 0, width, height);
-        
-        g2.dispose();
-        super.paintComponent(g);
+    
+    private String toHexString(Color color) {
+        return String.format("#%02X%02X%02X",
+            (int) (color.getRed() * 255),
+            (int) (color.getGreen() * 255),
+            (int) (color.getBlue() * 255));
     }
 }

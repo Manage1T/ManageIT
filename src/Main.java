@@ -1,40 +1,51 @@
 import Database.Database;
+import Mussie.DatabaseHelper;
+import Mussie.ForgotPasswordPane;
 import Mussie.SlidingContainer;
 
-import javax.swing.*;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
 import java.sql.Connection;
 
-public class Main {
+public class Main extends Application {
+
+    @Override
+    public void start(Stage primaryStage) {
+        SlidingContainer slidingContainer = new SlidingContainer();
+        ForgotPasswordPane forgotPasswordPane = new ForgotPasswordPane();
+
+        Scene scene = new Scene(slidingContainer);
+
+        // Navigate: Sign In -> Forgot Password
+        slidingContainer.setOnForgotPassword(() -> {
+            scene.setRoot(forgotPasswordPane);
+        });
+
+        // Navigate: Forgot Password -> Sign In
+        forgotPasswordPane.setOnBackToSignIn(() -> {
+            scene.setRoot(slidingContainer);
+        });
+
+        primaryStage.setTitle("ManageIT - Authenticate");
+        primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
+        primaryStage.show();
+    }
+
     public static void main(String[] args) {
         // GLOBAL VARIABLES : TELL IN TELEGRAM IF CHANGING
         Database db = new Database();
         Connection conn = db.con;
 
         if (conn == null) {
-            System.out.println("Error when connecting to database. Exiting!\n");
-            System.exit(1);
+            System.out.println("WARNING: Could not connect to database. App will launch without database features.\n");
+        } else {
+            // Ensure the database schema is up to date
+            DatabaseHelper.ensureSchema();
         }
 
-
-        // Mussie Setup
-        // Set system look and feel for native components (like caret, etc.) if available
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-        }
-
-        // Run UI on the Event Dispatch Thread (EDT)
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("ManageIT - Authenticate");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setResizable(false);
-
-            SlidingContainer slidingContainer = new SlidingContainer();
-            frame.getContentPane().add(slidingContainer);
-            
-            frame.pack(); // Pack frame around SlidingContainer size (850x550)
-            frame.setLocationRelativeTo(null); // Center window
-            frame.setVisible(true);
-        });
+        launch(args);
     }
 }

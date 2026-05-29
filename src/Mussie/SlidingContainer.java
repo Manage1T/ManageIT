@@ -1,270 +1,278 @@
 package Mussie;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.image.ImageObserver;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
-public class SlidingContainer extends JPanel {
+public class SlidingContainer extends AnchorPane {
     private final int CONTAINER_WIDTH = 850;
     private final int CONTAINER_HEIGHT = 550;
     private final int OVERLAY_WIDTH = 340;
     private final int FORM_WIDTH = 510;
 
-    private JPanel formPanel;
-    private JPanel formInnerPanel;
-    private GradientPanel overlayPanel;
-    private JPanel overlayInnerPanel;
+    private Pane formPanel;
+    private Pane formInnerPanel;
+    private Pane overlayPanel;
+    private Pane overlayInnerPanel;
 
-    // Fields for Sign In (stored as instance variables)
+    // Fields for Sign In
     private RoundedTextField signInUsernameField;
     private RoundedPasswordField signInPasswordField;
 
-    // Fields for Sign Up (stored as instance variables)
+    // Fields for Sign Up
     private RoundedTextField signUpNameField;
     private RoundedTextField signUpUsernameField;
     private RoundedTextField signUpEmailField;
     private RoundedPasswordField signUpPasswordField;
 
-    // State: false = Sign In view (Overlay on right), true = Sign Up view (Overlay on left)
-    private boolean isSignUpState = false;
-    private double progress = 0.0; // 0.0 (Sign In) to 1.0 (Sign Up)
-    private Timer animationTimer;
+    private DoubleProperty progress = new SimpleDoubleProperty(0.0);
+    private Timeline timeline;
+
+    // Callback for forgot password navigation
+    private Runnable onForgotPassword;
 
     public SlidingContainer() {
-        setPreferredSize(new Dimension(CONTAINER_WIDTH, CONTAINER_HEIGHT));
-        setLayout(null);
-        setBackground(Color.WHITE);
+        setPrefSize(CONTAINER_WIDTH, CONTAINER_HEIGHT);
+        setStyle("-fx-background-color: white;");
 
-        // Initialize Form Panel (White background, moves from x=0 to x=340)
-        formPanel = new JPanel();
-        formPanel.setBounds(0, 0, FORM_WIDTH, CONTAINER_HEIGHT);
-        formPanel.setLayout(null);
-        formPanel.setOpaque(true);
-        formPanel.setBackground(Color.WHITE);
+        // Form Panel
+        formPanel = new Pane();
+        formPanel.setPrefSize(FORM_WIDTH, CONTAINER_HEIGHT);
+        formPanel.setLayoutX(0);
+        formPanel.setLayoutY(0);
+        formPanel.setStyle("-fx-background-color: white;");
+        javafx.scene.shape.Rectangle formClip = new javafx.scene.shape.Rectangle(FORM_WIDTH, CONTAINER_HEIGHT);
+        formPanel.setClip(formClip);
 
-        // Form Inner Panel (Contains Sign In and Sign Up forms next to each other, moves from x=0 to x=-510)
-        formInnerPanel = new JPanel();
-        formInnerPanel.setBounds(0, 0, FORM_WIDTH * 2, CONTAINER_HEIGHT);
-        formInnerPanel.setLayout(null);
-        formInnerPanel.setOpaque(true);
-        formInnerPanel.setBackground(Color.WHITE);
-        formPanel.add(formInnerPanel);
+        formInnerPanel = new Pane();
+        formInnerPanel.setPrefSize(FORM_WIDTH * 2, CONTAINER_HEIGHT);
+        formInnerPanel.setLayoutX(0);
+        formInnerPanel.setLayoutY(0);
+        formPanel.getChildren().add(formInnerPanel);
 
-        // Build forms
-        JPanel signInForm = createSignInForm();
-        signInForm.setBounds(0, 0, FORM_WIDTH, CONTAINER_HEIGHT);
-        formInnerPanel.add(signInForm);
+        Pane signInForm = createSignInForm();
+        signInForm.setLayoutX(0);
+        formInnerPanel.getChildren().add(signInForm);
 
-        JPanel signUpForm = createSignUpForm();
-        signUpForm.setBounds(FORM_WIDTH, 0, FORM_WIDTH, CONTAINER_HEIGHT);
-        formInnerPanel.add(signUpForm);
+        Pane signUpForm = createSignUpForm();
+        signUpForm.setLayoutX(FORM_WIDTH);
+        formInnerPanel.getChildren().add(signUpForm);
 
-        // Initialize Overlay Panel (Gradient background, moves from x=510 to x=0)
-        overlayPanel = new GradientPanel(Color.decode("#0ba360"), Color.decode("#028a55"));
-        overlayPanel.setBounds(FORM_WIDTH, 0, OVERLAY_WIDTH, CONTAINER_HEIGHT);
-        overlayPanel.setLayout(null);
+        // Overlay Panel
+        overlayPanel = new Pane();
+        overlayPanel.setPrefSize(OVERLAY_WIDTH, CONTAINER_HEIGHT);
+        overlayPanel.setLayoutX(FORM_WIDTH);
+        overlayPanel.setLayoutY(0);
+        overlayPanel.setStyle("-fx-background-color: linear-gradient(to bottom right, #0ba360, #028a55);");
+        javafx.scene.shape.Rectangle overlayClip = new javafx.scene.shape.Rectangle(OVERLAY_WIDTH, CONTAINER_HEIGHT);
+        overlayPanel.setClip(overlayClip);
 
-        // Overlay Inner Panel (Contains Sign Up prompt and Sign In prompt, moves from x=0 to x=-340)
-        overlayInnerPanel = new JPanel();
-        overlayInnerPanel.setBounds(0, 0, OVERLAY_WIDTH * 2, CONTAINER_HEIGHT);
-        overlayInnerPanel.setLayout(null);
-        overlayInnerPanel.setOpaque(false);
-        overlayPanel.add(overlayInnerPanel);
+        overlayInnerPanel = new Pane();
+        overlayInnerPanel.setPrefSize(OVERLAY_WIDTH * 2, CONTAINER_HEIGHT);
+        overlayInnerPanel.setLayoutX(0);
+        overlayInnerPanel.setLayoutY(0);
+        overlayPanel.getChildren().add(overlayInnerPanel);
 
-        // Build prompts
-        JPanel signUpPrompt = createSignUpPrompt();
-        signUpPrompt.setBounds(0, 0, OVERLAY_WIDTH, CONTAINER_HEIGHT);
-        overlayInnerPanel.add(signUpPrompt);
+        Pane signUpPrompt = createSignUpPrompt();
+        signUpPrompt.setLayoutX(0);
+        overlayInnerPanel.getChildren().add(signUpPrompt);
 
-        JPanel signInPrompt = createSignInPrompt();
-        signInPrompt.setBounds(OVERLAY_WIDTH, 0, OVERLAY_WIDTH, CONTAINER_HEIGHT);
-        overlayInnerPanel.add(signInPrompt);
+        Pane signInPrompt = createSignInPrompt();
+        signInPrompt.setLayoutX(OVERLAY_WIDTH);
+        overlayInnerPanel.getChildren().add(signInPrompt);
 
-        // Add panels to main container
-        add(overlayPanel);
-        add(formPanel);
+        getChildren().addAll(overlayPanel, formPanel);
 
-        // Set initial positions
-        updatePositions();
+        progress.addListener((obs, oldVal, newVal) -> updatePositions(newVal.doubleValue()));
+        updatePositions(0.0);
     }
 
-    private void updatePositions() {
-        double t = easeInOut(progress);
-
-        // Form Panel moves right: 0 -> 340
-        int formX = (int) (t * OVERLAY_WIDTH);
-        formPanel.setLocation(formX, 0);
-
-        // Form Inner Panel moves left relative to Form Panel: 0 -> -510
-        int formInnerX = (int) (-t * FORM_WIDTH);
-        formInnerPanel.setLocation(formInnerX, 0);
-
-        // Overlay Panel moves left: 510 -> 0
-        int overlayX = (int) (FORM_WIDTH - t * FORM_WIDTH);
-        overlayPanel.setLocation(overlayX, 0);
-
-        // Overlay Inner Panel moves left relative to Overlay Panel: 0 -> -340
-        int overlayInnerX = (int) (-t * OVERLAY_WIDTH);
-        overlayInnerPanel.setLocation(overlayInnerX, 0);
-
-        repaint();
-    }
-
-    private double easeInOut(double t) {
-        // Cubic ease-in-out
-        return t < 0.5 ? 4.0 * t * t * t : 1.0 - Math.pow(-2.0 * t + 2.0, 3.0) / 2.0;
+    private void updatePositions(double t) {
+        formPanel.setLayoutX(t * OVERLAY_WIDTH);
+        formInnerPanel.setLayoutX(-t * FORM_WIDTH);
+        overlayPanel.setLayoutX(FORM_WIDTH - t * FORM_WIDTH);
+        overlayInnerPanel.setLayoutX(-t * OVERLAY_WIDTH);
     }
 
     public void animateToState(boolean signUp) {
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
+        if (timeline != null && timeline.getStatus() == Timeline.Status.RUNNING) {
+            timeline.stop();
         }
 
-        isSignUpState = signUp;
         double target = signUp ? 1.0 : 0.0;
-        double step = signUp ? 0.04 : -0.04;
+        timeline = new Timeline(
+            new KeyFrame(Duration.millis(600), 
+                new KeyValue(progress, target, Interpolator.EASE_BOTH))
+        );
+        timeline.play();
+    }
 
-        animationTimer = new Timer(15, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                progress += step;
-                if ((step > 0 && progress >= target) || (step < 0 && progress <= target)) {
-                    progress = target;
-                    updatePositions();
-                    animationTimer.stop();
-                } else {
-                    updatePositions();
-                }
+    private Pane createSignInForm() {
+        Pane panel = new Pane();
+        panel.setPrefSize(FORM_WIDTH, CONTAINER_HEIGHT);
+
+        Label titleLabel = new Label("Sign In");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 36));
+        titleLabel.setTextFill(Color.web("#028a55"));
+        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.setLayoutX(50);
+        titleLabel.setLayoutY(70);
+        titleLabel.setPrefWidth(410);
+
+        signInUsernameField = new RoundedTextField("Username", RoundedTextField.IconType.USER);
+        signInUsernameField.setLayoutX(75);
+        signInUsernameField.setLayoutY(170);
+        signInUsernameField.setPrefSize(360, 45);
+
+        signInPasswordField = new RoundedPasswordField("Password");
+        signInPasswordField.setLayoutX(75);
+        signInPasswordField.setLayoutY(230);
+        signInPasswordField.setPrefSize(360, 45);
+
+        Label forgotLabel = new Label("Forgot your password ?");
+        forgotLabel.setFont(Font.font("Segoe UI", 13));
+        forgotLabel.setTextFill(Color.web("#777777"));
+        forgotLabel.setAlignment(Pos.CENTER);
+        forgotLabel.setCursor(Cursor.HAND);
+        forgotLabel.setLayoutX(155);
+        forgotLabel.setLayoutY(290);
+        forgotLabel.setPrefSize(200, 30);
+
+        // Hover effect
+        forgotLabel.setOnMouseEntered(e -> forgotLabel.setTextFill(Color.web("#028a55")));
+        forgotLabel.setOnMouseExited(e -> forgotLabel.setTextFill(Color.web("#777777")));
+
+        // Navigate to forgot password page
+        forgotLabel.setOnMouseClicked(e -> {
+            if (onForgotPassword != null) {
+                onForgotPassword.run();
             }
         });
-        animationTimer.start();
-    }
 
-    private JPanel createSignInForm() {
-        JPanel panel = new JPanel(null);
-        panel.setOpaque(false);
-
-        // Title
-        JLabel titleLabel = new JLabel("Sign In", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
-        titleLabel.setForeground(Color.decode("#028a55"));
-        titleLabel.setBounds(50, 70, 410, 50);
-        panel.add(titleLabel);
-
-        // Username field
-        signInUsernameField = new RoundedTextField("Username", RoundedTextField.IconType.USER);
-        signInUsernameField.setBounds(75, 170, 360, 45);
-        panel.add(signInUsernameField);
-
-        // Password field
-        signInPasswordField = new RoundedPasswordField("Password");
-        signInPasswordField.setBounds(75, 230, 360, 45);
-        panel.add(signInPasswordField);
-
-        // Forgot password
-        JLabel forgotLabel = new JLabel("Forgot your password ?", SwingConstants.CENTER);
-        forgotLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        forgotLabel.setForeground(Color.decode("#777777"));
-        forgotLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        forgotLabel.setBounds(155, 290, 200, 30);
-        panel.add(forgotLabel);
-
-        // SIGN IN button
         RoundedButton signInBtn = new RoundedButton("SIGN IN", false);
-        signInBtn.setBounds(155, 345, 200, 45);
-        signInBtn.addActionListener(e -> handleSignIn());
-        panel.add(signInBtn);
+        signInBtn.setLayoutX(155);
+        signInBtn.setLayoutY(345);
+        signInBtn.setPrefSize(200, 45);
+        signInBtn.setOnAction(e -> handleSignIn());
 
+        panel.getChildren().addAll(titleLabel, signInUsernameField, signInPasswordField, forgotLabel, signInBtn);
         return panel;
     }
 
-    private JPanel createSignUpForm() {
-        JPanel panel = new JPanel(null);
-        panel.setOpaque(false);
+    private Pane createSignUpForm() {
+        Pane panel = new Pane();
+        panel.setPrefSize(FORM_WIDTH, CONTAINER_HEIGHT);
 
-        // Title
-        JLabel titleLabel = new JLabel("Create Account", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 32));
-        titleLabel.setForeground(Color.decode("#028a55"));
-        titleLabel.setBounds(50, 50, 410, 45);
-        panel.add(titleLabel);
+        Label titleLabel = new Label("Create Account");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 32));
+        titleLabel.setTextFill(Color.web("#028a55"));
+        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.setLayoutX(50);
+        titleLabel.setLayoutY(50);
+        titleLabel.setPrefWidth(410);
 
-        // Name field
         signUpNameField = new RoundedTextField("Name", RoundedTextField.IconType.USER);
-        signUpNameField.setBounds(75, 120, 360, 43);
-        panel.add(signUpNameField);
+        signUpNameField.setLayoutX(75);
+        signUpNameField.setLayoutY(120);
+        signUpNameField.setPrefSize(360, 43);
 
-        // Username field
         signUpUsernameField = new RoundedTextField("Username", RoundedTextField.IconType.USER);
-        signUpUsernameField.setBounds(75, 175, 360, 43);
-        panel.add(signUpUsernameField);
+        signUpUsernameField.setLayoutX(75);
+        signUpUsernameField.setLayoutY(175);
+        signUpUsernameField.setPrefSize(360, 43);
 
-        // Email field
         signUpEmailField = new RoundedTextField("Email", RoundedTextField.IconType.EMAIL);
-        signUpEmailField.setBounds(75, 230, 360, 43);
-        panel.add(signUpEmailField);
+        signUpEmailField.setLayoutX(75);
+        signUpEmailField.setLayoutY(230);
+        signUpEmailField.setPrefSize(360, 43);
 
-        // Password field
         signUpPasswordField = new RoundedPasswordField("Password");
-        signUpPasswordField.setBounds(75, 285, 360, 43);
-        panel.add(signUpPasswordField);
+        signUpPasswordField.setLayoutX(75);
+        signUpPasswordField.setLayoutY(285);
+        signUpPasswordField.setPrefSize(360, 43);
 
-        // SIGN UP button
         RoundedButton signUpBtn = new RoundedButton("SIGN UP", false);
-        signUpBtn.setBounds(155, 355, 200, 45);
-        signUpBtn.addActionListener(e -> handleSignUp());
-        panel.add(signUpBtn);
+        signUpBtn.setLayoutX(155);
+        signUpBtn.setLayoutY(355);
+        signUpBtn.setPrefSize(200, 45);
+        signUpBtn.setOnAction(e -> handleSignUp());
 
+        panel.getChildren().addAll(titleLabel, signUpNameField, signUpUsernameField, signUpEmailField, signUpPasswordField, signUpBtn);
         return panel;
     }
 
-    private JPanel createSignUpPrompt() {
-        JPanel panel = new JPanel(null);
-        panel.setOpaque(false);
+    private Pane createSignUpPrompt() {
+        Pane panel = new Pane();
+        panel.setPrefSize(OVERLAY_WIDTH, CONTAINER_HEIGHT);
 
-        JLabel titleLabel = new JLabel("Hello, Friend!", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBounds(20, 130, 300, 40);
-        panel.add(titleLabel);
+        Label titleLabel = new Label("Hello, Friend!");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.setLayoutX(20);
+        titleLabel.setLayoutY(130);
+        titleLabel.setPrefWidth(300);
 
-        JLabel descLabel = new JLabel("<html><center>Enter your personal details<br>and start journey with us</center></html>", SwingConstants.CENTER);
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        descLabel.setForeground(Color.WHITE);
-        descLabel.setBounds(20, 185, 300, 60);
-        panel.add(descLabel);
+        Label descLabel = new Label("Enter your personal details\nand start journey with us");
+        descLabel.setFont(Font.font("Segoe UI", 13));
+        descLabel.setTextFill(Color.WHITE);
+        descLabel.setTextAlignment(TextAlignment.CENTER);
+        descLabel.setAlignment(Pos.CENTER);
+        descLabel.setLayoutX(20);
+        descLabel.setLayoutY(185);
+        descLabel.setPrefSize(300, 60);
 
         RoundedButton toggleBtn = new RoundedButton("SIGN UP", true);
-        toggleBtn.setBounds(90, 275, 160, 40);
-        toggleBtn.addActionListener(e -> animateToState(true));
-        panel.add(toggleBtn);
+        toggleBtn.setLayoutX(90);
+        toggleBtn.setLayoutY(275);
+        toggleBtn.setPrefSize(160, 40);
+        toggleBtn.setOnAction(e -> animateToState(true));
 
+        panel.getChildren().addAll(titleLabel, descLabel, toggleBtn);
         return panel;
     }
 
-    private JPanel createSignInPrompt() {
-        JPanel panel = new JPanel(null);
-        panel.setOpaque(false);
+    private Pane createSignInPrompt() {
+        Pane panel = new Pane();
+        panel.setPrefSize(OVERLAY_WIDTH, CONTAINER_HEIGHT);
 
-        JLabel titleLabel = new JLabel("Welcome Back!", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(Color.WHITE);
-        titleLabel.setBounds(20, 130, 300, 40);
-        panel.add(titleLabel);
+        Label titleLabel = new Label("Welcome Back!");
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
+        titleLabel.setTextFill(Color.WHITE);
+        titleLabel.setAlignment(Pos.CENTER);
+        titleLabel.setLayoutX(20);
+        titleLabel.setLayoutY(130);
+        titleLabel.setPrefWidth(300);
 
-        JLabel descLabel = new JLabel("<html><center>To keep connected with us please<br>login with your personal info</center></html>", SwingConstants.CENTER);
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        descLabel.setForeground(Color.WHITE);
-        descLabel.setBounds(20, 185, 300, 60);
-        panel.add(descLabel);
+        Label descLabel = new Label("To keep connected with us please\nlogin with your personal info");
+        descLabel.setFont(Font.font("Segoe UI", 13));
+        descLabel.setTextFill(Color.WHITE);
+        descLabel.setTextAlignment(TextAlignment.CENTER);
+        descLabel.setAlignment(Pos.CENTER);
+        descLabel.setLayoutX(20);
+        descLabel.setLayoutY(185);
+        descLabel.setPrefSize(300, 60);
 
         RoundedButton toggleBtn = new RoundedButton("SIGN IN", true);
-        toggleBtn.setBounds(90, 275, 160, 40);
-        toggleBtn.addActionListener(e -> animateToState(false));
-        panel.add(toggleBtn);
+        toggleBtn.setLayoutX(90);
+        toggleBtn.setLayoutY(275);
+        toggleBtn.setPrefSize(160, 40);
+        toggleBtn.setOnAction(e -> animateToState(false));
 
+        panel.getChildren().addAll(titleLabel, descLabel, toggleBtn);
         return panel;
     }
 
@@ -285,7 +293,6 @@ public class SlidingContainer extends JPanel {
         boolean success = DatabaseHelper.authenticateUser(username, password);
         if (success) {
             CustomDialog.show(this, "Authentication Successful", "Welcome back! Login verified.", true);
-            // Clear inputs
             signInUsernameField.setText("");
             signInPasswordField.setText("");
         } else {
@@ -327,13 +334,14 @@ public class SlidingContainer extends JPanel {
         DatabaseHelper.RegistrationResult result = DatabaseHelper.registerUser(name, username, email, password);
         switch (result) {
             case SUCCESS:
-                CustomDialog.show(this, "Registration Successful", "Account created successfully! You can now sign in.", true);
-                // Clear fields
+                String key = DatabaseHelper.lastGeneratedRecoveryKey;
+                String successMsg = "Account created successfully!\n\nYour Recovery Key is:\n" + key 
+                        + "\n\nSave this key! You will need it to reset your password if you ever forget it.";
+                CustomDialog.show(this, "Registration Successful", successMsg, true);
                 signUpNameField.setText("");
                 signUpUsernameField.setText("");
                 signUpEmailField.setText("");
                 signUpPasswordField.setText("");
-                // Transition to sign in
                 animateToState(false);
                 break;
             case USERNAME_ALREADY_EXISTS:
@@ -342,7 +350,6 @@ public class SlidingContainer extends JPanel {
             case EMAIL_ALREADY_EXISTS:
                 CustomDialog.show(this, "Registration Failed", "This email address is already registered.", false);
                 break;
-            case ImageObserver.ERROR:
             default:
                 CustomDialog.show(this, "System Error", "Registration failed. Verify database connectivity in db.properties.", false);
                 break;
@@ -351,5 +358,12 @@ public class SlidingContainer extends JPanel {
 
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
+    }
+
+    /**
+     * Sets the callback to execute when the user clicks "Forgot your password?".
+     */
+    public void setOnForgotPassword(Runnable callback) {
+        this.onForgotPassword = callback;
     }
 }
