@@ -1,85 +1,76 @@
 package Mussie;
 
-import javax.swing.*;
-import java.awt.*;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.stage.Window;
 
-public class CustomDialog extends JDialog {
-    public CustomDialog(JFrame parent, String title, String message, boolean isSuccess) {
-        super(parent, true);
-        setUndecorated(true);
-        setSize(350, 180);
-        setLocationRelativeTo(parent);
+public class CustomDialog extends Stage {
+
+    public CustomDialog(Window owner, String title, String message, boolean isSuccess) {
+        initOwner(owner);
+        initModality(Modality.APPLICATION_MODAL);
+        initStyle(StageStyle.UNDECORATED);
+
+        VBox contentPanel = new VBox(10);
+        contentPanel.setAlignment(Pos.CENTER);
+        contentPanel.setPrefSize(380, 220);
         
-        // Custom background panel with border
-        JPanel contentPanel = new JPanel(null) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // White background
-                g2.setColor(Color.WHITE);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                
-                // Theme border
-                Color borderColor = isSuccess ? Color.decode("#028a55") : Color.decode("#d9534f");
-                g2.setColor(borderColor);
-                g2.setStroke(new BasicStroke(3.0f));
-                g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
-                
-                g2.dispose();
-            }
-        };
-        contentPanel.setLayout(null);
-        contentPanel.setBackground(Color.WHITE);
-        setContentPane(contentPanel);
+        String borderColor = isSuccess ? "#028a55" : "#d9534f";
+        contentPanel.setStyle("-fx-background-color: white; -fx-border-color: " + borderColor + "; -fx-border-width: 3;");
 
-        // Icon or Status Circle
-        JLabel statusIcon = new JLabel(isSuccess ? "✓" : "✗", SwingConstants.CENTER);
-        statusIcon.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        statusIcon.setForeground(isSuccess ? Color.decode("#028a55") : Color.decode("#d9534f"));
-        statusIcon.setBounds(150, 20, 50, 40);
-        contentPanel.add(statusIcon);
+        Label statusIcon = new Label(isSuccess ? "✓" : "✗");
+        statusIcon.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
+        statusIcon.setTextFill(Color.web(borderColor));
 
-        // Title
-        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        titleLabel.setForeground(Color.decode("#2d3748"));
-        titleLabel.setBounds(20, 60, 310, 25);
-        contentPanel.add(titleLabel);
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        titleLabel.setTextFill(Color.web("#2d3748"));
 
-        // Message
-        JLabel messageLabel = new JLabel("<html><center>" + message + "</center></html>", SwingConstants.CENTER);
-        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        messageLabel.setForeground(Color.decode("#777777"));
-        messageLabel.setBounds(20, 85, 310, 40);
-        contentPanel.add(messageLabel);
+        Label messageLabel = new Label(message);
+        messageLabel.setFont(Font.font("Segoe UI", 13));
+        messageLabel.setTextFill(Color.web("#777777"));
+        messageLabel.setTextAlignment(TextAlignment.CENTER);
+        messageLabel.setWrapText(true);
 
-        // OK Button
         RoundedButton okButton = new RoundedButton("OK", false);
-        // Custom color for error dialog button
+        // Note: For red error style we could dynamically inject CSS, but the original kept it mostly green anyway or matched.
+        // Let's explicitly override if it's an error
         if (!isSuccess) {
-            // Re-configure button colors for errors
-            okButton = new RoundedButton("OK", false) {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    // Override colors locally for red error style
-                    // Create an inline override or simply use custom colors
-                    super.paintComponent(g);
-                }
-            };
-            // Note: RoundedButton uses hardcoded green colors, let's make it look fine anyway or match theme
+            okButton.setStyle("-fx-background-color: #d9534f; -fx-background-radius: 20; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 11px;");
+            okButton.setOnMouseEntered(e -> okButton.setStyle("-fx-background-color: #c9302c; -fx-background-radius: 20; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 11px;"));
+            okButton.setOnMouseExited(e -> okButton.setStyle("-fx-background-color: #d9534f; -fx-background-radius: 20; -fx-text-fill: white; -fx-font-family: 'Segoe UI'; -fx-font-weight: bold; -fx-font-size: 11px;"));
         }
-        okButton.setBounds(125, 135, 100, 30);
-        okButton.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        okButton.addActionListener(e -> dispose());
-        contentPanel.add(okButton);
+        
+        okButton.setPrefWidth(100);
+        okButton.setPrefHeight(30);
+        okButton.setOnAction(e -> close());
+
+        VBox.setMargin(statusIcon, new javafx.geometry.Insets(10, 0, 0, 0));
+        VBox.setMargin(okButton, new javafx.geometry.Insets(10, 0, 10, 0));
+
+        contentPanel.getChildren().addAll(statusIcon, titleLabel, messageLabel, okButton);
+
+        Scene scene = new Scene(contentPanel);
+        scene.setFill(Color.TRANSPARENT);
+        setScene(scene);
     }
 
-    public static void show(Component parentComponent, String title, String message, boolean isSuccess) {
-        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(parentComponent);
-        CustomDialog cd = new CustomDialog(parentFrame, title, message, isSuccess);
-        cd.setVisible(true);
+    public static void show(javafx.scene.Node parentNode, String title, String message, boolean isSuccess) {
+        Window owner = null;
+        if (parentNode != null && parentNode.getScene() != null) {
+            owner = parentNode.getScene().getWindow();
+        }
+        CustomDialog dialog = new CustomDialog(owner, title, message, isSuccess);
+        dialog.showAndWait();
     }
 }
