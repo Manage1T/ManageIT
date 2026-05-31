@@ -1,4 +1,7 @@
+package Main;
+
 import Database.Database;
+import Models.User;
 import Mussie.DatabaseHelper;
 import Mussie.ForgotPasswordPane;
 import Mussie.SlidingContainer;
@@ -10,10 +13,10 @@ import javafx.stage.Stage;
 import java.sql.Connection;
 
 public class Main extends Application {
-
+    User user;
     @Override
     public void start(Stage primaryStage) {
-        SlidingContainer slidingContainer = new SlidingContainer();
+        SlidingContainer slidingContainer = new SlidingContainer(this);
         ForgotPasswordPane forgotPasswordPane = new ForgotPasswordPane();
 
         Scene scene = new Scene(slidingContainer);
@@ -47,5 +50,10 @@ public class Main extends Application {
         }
 
         launch(args);
+    }
+
+    public void setUser(User user) {
+        System.out.println("Got user : " + user.username);
+        this.user = user;
     }
 }

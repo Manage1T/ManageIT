@@ -1,5 +1,7 @@
 package Mussie;
 
+import Main.Main;
+import Models.User;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -44,7 +46,12 @@ public class SlidingContainer extends AnchorPane {
     // Callback for forgot password navigation
     private Runnable onForgotPassword;
 
-    public SlidingContainer() {
+    // Added by mahder
+    public Main mainApp;
+
+    public SlidingContainer(Main mainApp) {
+        this.mainApp = mainApp;
+
         setPrefSize(CONTAINER_WIDTH, CONTAINER_HEIGHT);
         setStyle("-fx-background-color: white;");
 
@@ -295,6 +302,14 @@ public class SlidingContainer extends AnchorPane {
             CustomDialog.show(this, "Authentication Successful", "Welcome back! Login verified.", true);
             signInUsernameField.setText("");
             signInPasswordField.setText("");
+
+            // Give user to main application
+            User user = DatabaseHelper.getUserByUsername(username);
+            if (user == null) {
+                CustomDialog.show(this, "Internal Error", "Failed to fetch user from database!", false);
+                return;
+            }
+            mainApp.setUser(user);
         } else {
             CustomDialog.show(this, "Authentication Failed", "Invalid username or password.", false);
         }

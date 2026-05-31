@@ -1,6 +1,7 @@
 package Mussie;
 
 import Database.Database;
+import Models.User;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -200,5 +201,36 @@ public class DatabaseHelper {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Added by mahder
+    public static User getUserByUsername(String username) {
+        String sql = """
+            SELECT id, username, password_hash, profile_picture_url, created_at
+            FROM users
+            WHERE username = ?
+            """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password_hash"),
+                            rs.getString("profile_picture_url"),
+                            rs.getTimestamp("created_at").toLocalDateTime()
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
