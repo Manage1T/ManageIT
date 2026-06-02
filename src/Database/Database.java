@@ -16,6 +16,7 @@ public class Database {
         con = createConnection();
     }
 
+
     Connection createConnection() {
         try {
             // Create driver
@@ -345,6 +346,30 @@ public class Database {
             pstmt.setString(1, title);
             pstmt.setString(2, description);
             pstmt.setInt(3, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateTaskCompletion(int taskId, boolean isCompleted) {
+        String updateSql = "UPDATE tasks SET is_completed = ? WHERE id = ?";
+        try (PreparedStatement pstmt = this.con.prepareStatement(updateSql)) {
+            pstmt.setBoolean(1, isCompleted);
+            pstmt.setInt(2, taskId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateProjectStatus(int projectId, String status) {
+        String updateSql = "UPDATE projects SET status = ? WHERE id = ?";
+        try (PreparedStatement pstmt = this.con.prepareStatement(updateSql)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, projectId);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

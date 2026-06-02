@@ -124,7 +124,7 @@ public class HomePage extends HBox {
      */
     public void showProfile() {
         sideBar.selectProfile();
-        ProfilePage profilePage = new ProfilePage(mainApp.user.username);
+        ProfilePage profilePage = new ProfilePage(mainApp, db);
         setViewContent("Profile", profilePage);
     }
 

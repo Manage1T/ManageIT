@@ -123,4 +123,8 @@ public class Main extends Application {
         this.homePage = null;
         showLoginScreen();
     }
+
+    public Database getDb() {
+        return db;
+    }
 }
