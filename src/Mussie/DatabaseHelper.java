@@ -206,7 +206,7 @@ public class DatabaseHelper {
     // Added by mahder
     public static User getUserByUsername(String username) {
         String sql = """
-            SELECT id, username, password_hash, profile_picture_url, created_at
+            SELECT id, name, username, email, password_hash, profile_picture_url, created_at
             FROM users
             WHERE username = ?
             """;
@@ -218,13 +218,16 @@ public class DatabaseHelper {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return new User(
+                    User user = new User(
                             rs.getInt("id"),
                             rs.getString("username"),
                             rs.getString("password_hash"),
                             rs.getString("profile_picture_url"),
                             rs.getTimestamp("created_at").toLocalDateTime()
                     );
+                    user.name = rs.getString("name");
+                    user.email = rs.getString("email");
+                    return user;
                 }
             }
         } catch (SQLException e) {
@@ -232,5 +235,18 @@ public class DatabaseHelper {
         }
 
         return null;
+    }
+
+    public static boolean updateProfilePicture(String username, String url) {
+        String sql = "UPDATE users SET profile_picture_url = ? WHERE username = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, url);
+            stmt.setString(2, username);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

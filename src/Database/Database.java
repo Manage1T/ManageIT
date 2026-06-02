@@ -16,6 +16,7 @@ public class Database {
         con = createConnection();
     }
 
+
     Connection createConnection() {
         try {
             // Create driver
@@ -345,6 +346,114 @@ public class Database {
             pstmt.setString(1, title);
             pstmt.setString(2, description);
             pstmt.setInt(3, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateProjectDetailed(Project project, ArrayList<Tag> newTags, ArrayList<String> newImages, ArrayList<String> newTasks) {
+        String updateProjectSql = "UPDATE projects SET title = ?, description = ?, status = ? WHERE id = ?";
+        String taskSql = "INSERT INTO tasks (project_id, title) VALUES (?, ?)";
+        String imageSql = "INSERT INTO project_images (project_id, image_url) VALUES (?, ?)";
+        String tagSql = "INSERT INTO tags (name) VALUES (?) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id";
+        String linkSql = "INSERT INTO project_tags (project_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+
+        try {
+            this.con.setAutoCommit(false);
+
+            // 1. Update project title, description, status
+            try (PreparedStatement pstmt = this.con.prepareStatement(updateProjectSql)) {
+                pstmt.setString(1, project.title);
+                pstmt.setString(2, project.description);
+                pstmt.setString(3, project.status);
+                pstmt.setInt(4, project.id);
+                pstmt.executeUpdate();
+            }
+
+            // 2. Insert new tasks
+            if (newTasks != null && !newTasks.isEmpty()) {
+                try (PreparedStatement pstmtTasks = this.con.prepareStatement(taskSql)) {
+                    for (String taskTitle : newTasks) {
+                        pstmtTasks.setInt(1, project.id);
+                        pstmtTasks.setString(2, taskTitle);
+                        pstmtTasks.addBatch();
+                    }
+                    pstmtTasks.executeBatch();
+                }
+            }
+
+            // 3. Insert new images
+            if (newImages != null && !newImages.isEmpty()) {
+                try (PreparedStatement pstmtImages = this.con.prepareStatement(imageSql)) {
+                    for (String imgUrl : newImages) {
+                        pstmtImages.setInt(1, project.id);
+                        pstmtImages.setString(2, imgUrl);
+                        pstmtImages.addBatch();
+                    }
+                    pstmtImages.executeBatch();
+                }
+            }
+
+            // 4. Insert new tags and link them
+            if (newTags != null && !newTags.isEmpty()) {
+                try (PreparedStatement pstmtTag = this.con.prepareStatement(tagSql);
+                     PreparedStatement pstmtLink = this.con.prepareStatement(linkSql)) {
+                    for (Tag tag : newTags) {
+                        pstmtTag.setString(1, tag.name);
+                        int tagId = -1;
+                        try (ResultSet rs = pstmtTag.executeQuery()) {
+                            if (rs.next()) {
+                                tagId = rs.getInt("id");
+                            }
+                        }
+                        if (tagId != -1) {
+                            pstmtLink.setInt(1, project.id);
+                            pstmtLink.setInt(2, tagId);
+                            pstmtLink.addBatch();
+                        }
+                    }
+                    pstmtLink.executeBatch();
+                }
+            }
+
+            this.con.commit();
+            return true;
+        } catch (SQLException e) {
+            try {
+                if (this.con != null) this.con.rollback();
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            try {
+                if (this.con != null) this.con.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public boolean updateTaskCompletion(int taskId, boolean isCompleted) {
+        String updateSql = "UPDATE tasks SET is_completed = ? WHERE id = ?";
+        try (PreparedStatement pstmt = this.con.prepareStatement(updateSql)) {
+            pstmt.setBoolean(1, isCompleted);
+            pstmt.setInt(2, taskId);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateProjectStatus(int projectId, String status) {
+        String updateSql = "UPDATE projects SET status = ? WHERE id = ?";
+        try (PreparedStatement pstmt = this.con.prepareStatement(updateSql)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, projectId);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

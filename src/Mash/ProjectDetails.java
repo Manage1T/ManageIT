@@ -64,36 +64,84 @@ public class ProjectDetails extends VBox {
         // 4. Project Status
         Label statusLabel = new Label("Project Status: " + project.status);
         statusLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        statusLabel.setStyle("-fx-text-fill: #0ba360;"); // highlight status
+
+        // Helper to get color per status
+        java.util.function.Function<String, String> statusColor = s -> {
+            if ("complete".equalsIgnoreCase(s)) return "#0ba360";
+            if ("in_progress".equalsIgnoreCase(s)) return "#f6ad55";
+            return "#718096"; // new
+        };
+        statusLabel.setStyle("-fx-text-fill: " + statusColor.apply(project.status) + ";");
 
         // 5. Project Tasks Checklist
         Label tasksHeader = new Label("Project Tasks:");
         tasksHeader.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
         tasksHeader.setStyle("-fx-text-fill: #2d3748;");
         VBox tasksBox = new VBox(8); // Slight spacing between checklist items
-        int totalTasks = project.tasks.size();
-        int doneTasks = 0;
+        int totalTasks = project.tasks != null ? project.tasks.size() : 0;
+
+        // 6. Project Progress Percentage
+        Label progressLabel = new Label();
+        progressLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        progressLabel.setStyle("-fx-text-fill: #0ba360;");
+
+        // Helper to update progress live
+        Runnable updateProgress = () -> {
+            int done = 0;
+            if (project.tasks != null) {
+                for (Task t : project.tasks) {
+                    if (t.isCompleted) {
+                        done++;
+                    }
+                }
+            }
+            project.progressPercentage = (totalTasks == 0) ? 0 : (done * 100) / totalTasks;
+            progressLabel.setText("Project Progress: " + project.progressPercentage + "%");
+
+            // 3-state logic: new → in_progress → complete
+            String calculatedStatus;
+            if (totalTasks == 0 || done == 0) {
+                calculatedStatus = "new";
+            } else if (done == totalTasks) {
+                calculatedStatus = "complete";
+            } else {
+                calculatedStatus = "in_progress";
+            }
+
+            if (!calculatedStatus.equalsIgnoreCase(project.status)) {
+                project.status = calculatedStatus;
+                statusLabel.setText("Project Status: " + calculatedStatus);
+                statusLabel.setStyle("-fx-text-fill: " + statusColor.apply(calculatedStatus) + ";");
+                if (mainApp.getDb() != null) {
+                    mainApp.getDb().updateProjectStatus(project.id, calculatedStatus);
+                }
+            }
+        };
+
         if (project.tasks != null && !project.tasks.isEmpty()) {
             for (Task task : project.tasks) {
                 CheckBox taskCheckbox = new CheckBox(task.title);
                 taskCheckbox.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
                 taskCheckbox.setSelected(task.isCompleted);
-                if (task.isCompleted) {
-                    // If this view is strictly for display (read-only), disable the checkbox so users can't click it
-                    taskCheckbox.setDisable(true);
-                    doneTasks++;
-                }
+                
+                // Set interactive action handler to save and update state
+                taskCheckbox.setOnAction(e -> {
+                    boolean isSel = taskCheckbox.isSelected();
+                    task.isCompleted = isSel;
+                    if (mainApp.getDb() != null) {
+                        mainApp.getDb().updateTaskCompletion(task.id, isSel);
+                    }
+                    updateProgress.run();
+                });
+                
                 tasksBox.getChildren().add(taskCheckbox);
             }
         } else {
             tasksBox.getChildren().add(new Label("No tasks assigned."));
         }
 
-        // 6. Project Progress Percentage
-        project.progressPercentage = (totalTasks == 0) ? 0 : (doneTasks * 100) / totalTasks;
-        Label progressLabel = new Label("Project Progress: " + project.progressPercentage + "%");
-        progressLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        progressLabel.setStyle("-fx-text-fill: #0ba360;");
+        // Initialize progress percentage and text
+        updateProgress.run();
 
         // Create a back button to go back to the dashboard
         Button back = new Button("Back to Dashboard");

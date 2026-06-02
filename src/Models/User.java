@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 public class User {
     public int id;
     public String username;
+    public String name;
+    public String email;
     public String passwordHash;
     public String profilePictureUrl;
     public LocalDateTime createdAt;

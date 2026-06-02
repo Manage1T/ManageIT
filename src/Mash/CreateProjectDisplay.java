@@ -55,12 +55,15 @@ public class CreateProjectDisplay extends VBox {
 
         // Accept status
         RadioButton complete = new RadioButton("complete");
+        RadioButton inProgress = new RadioButton("in_progress");
         RadioButton start = new RadioButton("new");
         complete.getStyleClass().add("normal-text");
+        inProgress.getStyleClass().add("normal-text");
         start.getStyleClass().add("normal-text");
         complete.setToggleGroup(statusInput);
+        inProgress.setToggleGroup(statusInput);
         start.setToggleGroup(statusInput);
-        complete.setSelected(true);
+        start.setSelected(true);
 
         // Accept and display tags
         Button addTag = new Button("Add Tag");
@@ -127,7 +130,7 @@ public class CreateProjectDisplay extends VBox {
         Label statusLabel = new Label("Project Status : ");
         statusLabel.getStyleClass().add("normal-text");
         statusLabel.setStyle("-fx-font-weight: bold;");
-        HBox statusRow = new HBox(15, statusLabel, start, complete);
+        HBox statusRow = new HBox(15, statusLabel, start, inProgress, complete);
         statusRow.setAlignment(Pos.CENTER_LEFT);
 
         Label tagLabel = new Label("Tag : ");
