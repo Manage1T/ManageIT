@@ -64,7 +64,14 @@ public class ProjectDetails extends VBox {
         // 4. Project Status
         Label statusLabel = new Label("Project Status: " + project.status);
         statusLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        statusLabel.setStyle("-fx-text-fill: #0ba360;"); // highlight status
+
+        // Helper to get color per status
+        java.util.function.Function<String, String> statusColor = s -> {
+            if ("complete".equalsIgnoreCase(s)) return "#0ba360";
+            if ("in_progress".equalsIgnoreCase(s)) return "#f6ad55";
+            return "#718096"; // new
+        };
+        statusLabel.setStyle("-fx-text-fill: " + statusColor.apply(project.status) + ";");
 
         // 5. Project Tasks Checklist
         Label tasksHeader = new Label("Project Tasks:");
@@ -91,11 +98,20 @@ public class ProjectDetails extends VBox {
             project.progressPercentage = (totalTasks == 0) ? 0 : (done * 100) / totalTasks;
             progressLabel.setText("Project Progress: " + project.progressPercentage + "%");
 
-            // Update status based on whether all tasks are complete
-            String calculatedStatus = (totalTasks > 0 && done == totalTasks) ? "complete" : "new";
+            // 3-state logic: new → in_progress → complete
+            String calculatedStatus;
+            if (totalTasks == 0 || done == 0) {
+                calculatedStatus = "new";
+            } else if (done == totalTasks) {
+                calculatedStatus = "complete";
+            } else {
+                calculatedStatus = "in_progress";
+            }
+
             if (!calculatedStatus.equalsIgnoreCase(project.status)) {
                 project.status = calculatedStatus;
                 statusLabel.setText("Project Status: " + calculatedStatus);
+                statusLabel.setStyle("-fx-text-fill: " + statusColor.apply(calculatedStatus) + ";");
                 if (mainApp.getDb() != null) {
                     mainApp.getDb().updateProjectStatus(project.id, calculatedStatus);
                 }

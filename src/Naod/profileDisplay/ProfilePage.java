@@ -317,8 +317,15 @@ public class ProfilePage extends VBox {
             Region pSpacer = new Region();
             HBox.setHgrow(pSpacer, Priority.ALWAYS);
 
-            Label pStatus = new Label(p.status != null ? p.status.toUpperCase() : "NEW");
-            String statusColor = "complete".equalsIgnoreCase(p.status) ? "#00E676" : "#FFCA28";
+            Label pStatus = new Label(p.status != null ? p.status.toUpperCase().replace("_", " ") : "NEW");
+            String statusColor;
+            if ("complete".equalsIgnoreCase(p.status)) {
+                statusColor = "#00E676"; // green
+            } else if ("in_progress".equalsIgnoreCase(p.status)) {
+                statusColor = "#f6ad55"; // orange
+            } else {
+                statusColor = "#718096"; // grey for new
+            }
             pStatus.setStyle("-fx-text-fill: " + statusColor + "; -fx-font-weight: bold; -fx-font-size: 12px; -fx-font-family: 'Segoe UI';");
 
             projectCard.getChildren().addAll(pMeta, pSpacer, pStatus);
