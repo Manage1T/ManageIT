@@ -40,9 +40,10 @@ public class ChatPanel extends GradientPanel {
 
     public ChatPanel(String username) {
         this.username = username;
+        System.out.println("Chatting with username : " + username);
         setPrefSize(900, 600);
         buildUi();
-        loadHistory();
+        // Removed loadHistory() to fix left out messages showing to each user
         setInputEnabled(false);
         connectToServer();
     }
@@ -50,30 +51,32 @@ public class ChatPanel extends GradientPanel {
     private void buildUi() {
         chatArea.setEditable(false);
         chatArea.setWrapText(true);
+        chatArea.setStyle("-fx-control-inner-background: #ffffff; -fx-font-family: 'Segoe UI'; -fx-font-size: 14px; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #028a55; -fx-border-width: 2;");
 
-        Label title = new Label("ManageIT Team Chat");
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white;");
+        Label title = new Label("ManageIT Chat");
+        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #028a55;");
 
         Label subtitle = new Label("Signed in as " + username);
-        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: rgba(255,255,255,0.85);");
+        subtitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #718096;");
 
         BorderPane header = new BorderPane();
         header.setCenter(title);
         header.setBottom(subtitle);
+        header.setPadding(new Insets(0, 0, 15, 0));
 
-        HBox bottomBar = new HBox(10, receiverField, inputField, sendButton);
+        HBox bottomBar = new HBox(15, receiverField, inputField, sendButton);
         HBox.setHgrow(inputField, Priority.ALWAYS);
         HBox.setHgrow(receiverField, Priority.NEVER);
-        bottomBar.setPadding(new Insets(10, 0, 0, 0));
+        bottomBar.setPadding(new Insets(15, 0, 0, 0));
 
         BorderPane card = new BorderPane();
         card.setTop(header);
         card.setCenter(chatArea);
         card.setBottom(bottomBar);
-        card.setPadding(new Insets(20));
+        card.setPadding(new Insets(25));
         card.setMaxWidth(700);
         card.setMaxHeight(500);
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 20;");
+        card.setStyle("-fx-background-color: #f7faf9; -fx-background-radius: 20; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);");
 
         getChildren().add(card);
         sendButton.setOnAction(e -> sendMessage());
@@ -107,19 +110,23 @@ public class ChatPanel extends GradientPanel {
 
                 String authResponse = in.readUTF();
                 Platform.runLater(() -> {
-                    if (!authResponse.startsWith(ChatConfig.SYSTEM_PREFIX)) {
-                        appendIncomingMessage(authResponse);
-                    }
+                    appendSystemMessage("Server responded: " + authResponse);
                 });
 
                 if (authResponse.startsWith(ChatConfig.SYSTEM_PREFIX)
                         && authResponse.contains("Invalid")) {
-                    Platform.runLater(() -> setInputEnabled(false));
+                    Platform.runLater(() -> {
+                        setInputEnabled(false);
+                        appendSystemMessage("Authentication failed. Check if username exists.");
+                    });
                     return;
                 }
 
                 connected.set(true);
-                Platform.runLater(() -> setInputEnabled(true));
+                Platform.runLater(() -> {
+                    setInputEnabled(true);
+                    appendSystemMessage("Successfully connected and ready to chat!");
+                });
 
                 Thread listenerThread = new Thread(this::listenForMessages, "chat-listener");
                 listenerThread.setDaemon(true);
@@ -127,7 +134,10 @@ public class ChatPanel extends GradientPanel {
 
             } catch (IOException e) {
                 connected.set(false);
-                Platform.runLater(() -> setInputEnabled(false));
+                Platform.runLater(() -> {
+                    setInputEnabled(false);
+                    appendSystemMessage("Disconnected: " + e.getMessage());
+                });
             }
         }, "chat-connect");
         connectThread.setDaemon(true);
@@ -142,7 +152,10 @@ public class ChatPanel extends GradientPanel {
             }
         } catch (IOException e) {
             connected.set(false);
-            Platform.runLater(() -> setInputEnabled(false));
+            Platform.runLater(() -> {
+                setInputEnabled(false);
+                appendSystemMessage("Lost connection to server.");
+            });
         }
     }
 
@@ -169,7 +182,7 @@ public class ChatPanel extends GradientPanel {
         try {
             out.writeUTF(payload);
             out.flush();
-            inputField.setText("");
+            appendIncomingMessage("You (to " + receiver + "): " + message);
             inputField.setText("");
         } catch (IOException e) {
             connected.set(false);

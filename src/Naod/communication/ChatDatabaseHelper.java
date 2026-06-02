@@ -21,9 +21,8 @@ public class ChatDatabaseHelper {
                     "PostgreSQL driver not found. Add lib/postgresql-42.7.5.jar to your classpath.", e);
         }
 
-        String url = "jdbc:postgresql://ep-lucky-heart-apwes3oz.c-7.us-east-1.aws.neon.tech/neondb"
-                + "?sslmode=require&user=neondb_owner&password=npg_4zxK5dmIEhZD";
-        return DriverManager.getConnection(url);
+        String url = "jdbc:postgresql://localhost:5432/school_db";
+        return DriverManager.getConnection(url, "postgres", "6915");
     }
 
     public static boolean isDatabaseAvailable() {
