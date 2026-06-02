@@ -310,6 +310,8 @@ public class SlidingContainer extends AnchorPane {
                 return;
             }
             mainApp.setUser(user);
+            // Go to dashboard automatically after login - Mash
+            mainApp.switchToDashboard();
         } else {
             CustomDialog.show(this, "Authentication Failed", "Invalid username or password.", false);
         }

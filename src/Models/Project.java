@@ -13,6 +13,8 @@ public class Project {
     public String nextMilestone;
     public LocalDateTime createdAt;
     public ArrayList<Tag> tags = new ArrayList<Tag>();
+    public ArrayList<ProjectImage> images = new ArrayList<ProjectImage>();
+    public ArrayList<Task> tasks = new ArrayList<Task>();
 
     public Project() {}
 
@@ -30,5 +32,13 @@ public class Project {
 
     public void addTags(ArrayList<Tag>  tags) {
         this.tags.addAll(tags);
+    }
+
+    public void addImages(ArrayList<ProjectImage> images) {
+        this.images.addAll(images);
+    }
+
+    public void addTasks(ArrayList<Task> tasks) {
+        this.tasks.addAll(tasks);
     }
 }
