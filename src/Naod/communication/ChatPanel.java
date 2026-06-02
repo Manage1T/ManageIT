@@ -199,7 +199,7 @@ public class ChatPanel extends GradientPanel {
     }
 
     private void appendSystemMessage(String message) {
-        chatArea.appendText("[System] " + message + "\n");
+        System.out.println("[System] " + message);
     }
 
     private void setInputEnabled(boolean enabled) {

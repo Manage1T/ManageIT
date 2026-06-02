@@ -1,7 +1,7 @@
 package Naod.communication;
 
+import Database.Database;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,15 +14,11 @@ public class ChatDatabaseHelper {
     private static Boolean databaseAvailable;
 
     private static Connection getConnection() throws SQLException {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new SQLException(
-                    "PostgreSQL driver not found. Add lib/postgresql-42.7.5.jar to your classpath.", e);
+        Database db = new Database();
+        if (db.con == null) {
+            throw new SQLException("Database class returned null connection. Ensure Database.java URL and credentials are correct.");
         }
-
-        String url = "jdbc:postgresql://localhost:5432/school_db";
-        return DriverManager.getConnection(url, "postgres", "6915");
+        return db.con;
     }
 
     public static boolean isDatabaseAvailable() {

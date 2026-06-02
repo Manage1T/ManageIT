@@ -1,7 +1,5 @@
 package Naod.profileInteraction;
 
-import Naod.communication.ChatClient;
-
 import java.io.DataOutputStream;
 import java.net.Socket;
 
